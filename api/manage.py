@@ -5,6 +5,18 @@ from mensaje import Mensaje
 import re
 from xml.dom import minidom
 
+def normalize(s):
+        replacements = (
+            ("á", "a"),
+            ("é", "e"),
+            ("í", "i"),
+            ("ó", "o"),
+            ("ú", "u"),
+        )
+        for a, b in replacements:
+            s = s.replace(a, b).replace(a.upper(), b.upper())
+        return s
+
 class Manager():
     def __init__(self):
         #DICCIONARIO DE SOLICITUDES
@@ -12,10 +24,7 @@ class Manager():
         self.negativos = []
         self.empresas = []
         self.mensajes = []
-        self.noMensajes = 0
-        self.noMPositivos = 0
-        self.noMNegativos = 0
-        self.noMNeutros = 0
+        self.fechas = []
     
     def agregarSPositivos(self, sentimiento):
         nuevo = Positivos(sentimiento)
@@ -40,14 +49,16 @@ class Manager():
     def getTSentimiento(self, msj):
         noPositivos = 0
         noNegativos = 0
+        msj = normalize(msj)
+        msj = msj.upper()
         for positivo in self.positivos:
-            if(positivo.palabra in msj):
+            pPositiva = normalize(positivo.palabra)
+            if(pPositiva in msj):
                 noPositivos +=1
-        
         for negativo in self.negativos:
-            if(negativo.palabra in msj):
+            pNegativa = normalize(negativo.palabra)
+            if(pNegativa in msj):
                 noNegativos +=1
-
         if (noPositivos > noNegativos):
             tipo = 'positivo'
         elif (noNegativos > noPositivos):
@@ -61,38 +72,37 @@ class Manager():
         fecha = re.findall(r"[\d]{1,2}/[\d]{1,2}/[\d]{4}", msj)
         return fecha
 
-    def getEmpresa(self, msj, tipo):
-        for empresa in self.empresas:
-            if(empresa.nombre in msj):
-                empresa.noMensajes += 1
-                if tipo == 'positivo':
-                    empresa.noMPositivos += 1
-                elif tipo == 'negativo':
-                    empresa.noMNegativos += 1
+    def getEmpresa(self, msj):
+        msj = msj.split(" ")
+        for e in self.empresas:
+            for m in msj:
+                m = normalize(m)
+                res = re.match(e.nombre, m, flags = re.IGNORECASE)
+                if res != None:
+                    return e.nombre
                 else:
-                    empresa.noMNeutros += 1
-                return empresa
-        return None
-    
-    def getServicio(self, msj, nombre, tipo):
+                    pass
+
+    def getServicio(self, msj, nombre):
+        msj = msj.upper()
+        msj = normalize(msj)
         for empresa in self.empresas:
             if nombre == empresa.nombre:
                 for servicio in empresa.servicios:
+                    nServicio = servicio.tipo
+                    nServicio = nServicio.upper()
+                    nServicio = normalize(nServicio)
                     if len(servicio.alias) >0:
                         for alias in servicio.alias:
-                            if (alias.alias in msj):
-                                return servicio.tipo
-                            elif servicio.tipo in msj:
-                                servicio.noMensajes +=1
-                                if tipo == 'positivo':
-                                    servicio.noMPositivos += 1
-                                elif tipo == 'negativo':
-                                    servicio.noMNegativos += 1
-                                else:
-                                    servicio.noMNeutros += 1
-                                return servicio.tipo
+                            nAlias = alias.alias
+                            nAlias = normalize(nAlias)
+                            nAlias = nAlias.upper()
+                            if (nAlias in msj):
+                                return servicio
+                            elif nServicio in msj:
+                                return servicio
                     else:
-                        return servicio.tipo
+                        return servicio
 
     def agregarMensaje(self, nEmpresa, tServicio, tMensaje, fecha):
         nuevo = Mensaje(nEmpresa, tServicio, tMensaje, fecha)
@@ -128,13 +138,12 @@ class Manager():
         noMPositivos3 = 0
         noMNegativos3 = 0
         noMNeutros3 = 0
+    
 
 
         for fecha in lstFechas:
             for msj in self.mensajes:
                 if msj.fecha == fecha:
-                    print(fecha)
-                    print(msj.fecha)
                     noMensajes +=1
                     if msj.tMensaje == 'positivo':
                         noMPositivos += 1
@@ -172,8 +181,6 @@ class Manager():
             for e in self.empresas:
                 for msj in self.mensajes: 
                     if msj.fecha == fecha and e.nombre == msj.nombreEmpresa:
-                        print(e.nombre)
-                        print(msj.nombreEmpresa)
                         noMensajes2 +=1
                         if msj.tMensaje == 'positivo':
                             noMPositivos2 += 1
@@ -219,8 +226,6 @@ class Manager():
                 for servicio in e.servicios:
                     for msj in self.mensajes: 
                         if msj.fecha == fecha and servicio.tipo == msj.tServicio and e.nombre == msj.nombreEmpresa:
-                            print(servicio.tipo)
-                            print(msj.tServicio)
                             noMensajes3 +=1
                             if msj.tMensaje == 'positivo':
                                 noMPositivos3 += 1
@@ -266,14 +271,155 @@ class Manager():
             noMNegativos = 0
             noMNeutros = 0
                     
-                
-
         xml_str = doc.toprettyxml(indent ="\t") 
         
         save_path_file = "analisis.xml"
         
         with open(save_path_file, "w", encoding='utf-8') as f:
             f.write(xml_str)
+        
+        return xml_str
+
+    def analizarMensaje(self, mensaje):
+        #fecha:
+        fecha = re.search(r"[\d]{1,2}/[\d]{1,2}/[\d]{4}", mensaje)
+        dateMsj = fecha.group(0)
+
+        #lugar / red social:
+        aa = re.findall(r' *:(?: *([\w.-]+))?', mensaje)
+        redSocial = aa[3]
+
+        #username:
+        user = re.search(r'[\w.+-]+@[\w-]+\.[\w.-]+', mensaje)
+
+        if user != None:
+            userMsj = user.group(0)
+        else:
+            userMsj = aa[2]
+
+        nm = normalize(mensaje)
+        nm = nm.upper()
+
+        #empresa:
+        lstEmpresas = []
+        msj = mensaje.split(" ")
+        for e in self.empresas:
+            for m in msj:
+                res = re.match(e.nombre, m, flags = re.IGNORECASE)
+                if res != None:
+                    lstEmpresas.append(e.nombre)
+                else:
+                    pass
+
+        
+        #servicio:
+        lstServicios = []
+        if len(lstEmpresas) > 0:
+            for l in lstEmpresas:
+                tServicio = self.getServicio(nm, l)
+                lstServicios.append(tServicio.tipo)
+
+
+        #Definir sentimiento/número de palabras
+        noPositivos = 0
+        noNegativos = 0
+        noTotal = 0
+        lstSentimientos = []
+        for positivo in self.positivos:
+            pPositiva = (positivo.palabra)
+            if(pPositiva in nm):
+                print("POSITIVA!")
+                noTotal += 1
+
+        for negativo in self.negativos:
+            pNegativa = (negativo.palabra)
+            if(pNegativa in nm):
+                noNegativos +=1
+                noTotal += 1
+        
+        if noTotal>0:
+            sPositivo = int((noPositivos/noTotal)*100)
+            sNegativo = int((noNegativos/noTotal)*100)
+        else:
+            sPositivo = 0
+            sNegativo = 0
+
+        if noPositivos > 0:
+            lstSentimientos.append('positivo')
+        elif noNegativos > 0:
+            lstSentimientos.append('negativo')
+        else:
+            lstSentimientos.append('no sentimiento encontrado')
+
+        doc = minidom.Document()
+        respuesta = doc.createElement('respuesta')
+        doc.appendChild(respuesta)
+
+        fecha = doc.createElement('fecha')
+        respuesta.appendChild(fecha)
+        fecha.appendChild(doc.createTextNode(''+ dateMsj +''))
+
+        social = doc.createElement('red_social')
+        respuesta.appendChild(social)
+        social.appendChild(doc.createTextNode(''+ redSocial +''))
+
+        usuario = doc.createElement('usuario')
+        respuesta.appendChild(usuario)
+        usuario.appendChild(doc.createTextNode(''+userMsj+''))
+
+        empresas = doc.createElement('empresas')
+        respuesta.appendChild(empresas)
+        
+        for e in lstEmpresas:
+            empresa = doc.createElement('empresa')
+            empresas.appendChild(empresa)
+            empresa.appendChild(doc.createTextNode(''+e+''))
+
+        
+        for s in lstServicios:
+            servicio = doc.createElement('servicio')
+            empresa.appendChild(servicio)
+            servicio.appendChild(doc.createTextNode(''+s+''))  
+        
+
+        positivas = doc.createElement('palabras_positivas')
+        respuesta.appendChild(positivas)
+        positivas.appendChild(doc.createTextNode(''+ str(noPositivos) +''))
+
+        negativos = doc.createElement('palabras_negativas')
+        respuesta.appendChild(negativos)
+        negativos.appendChild(doc.createTextNode(''+str(noNegativos)+''))
+
+        sPositivoxml = doc.createElement('sentimiento_positivo')
+        respuesta.appendChild(sPositivoxml)
+        sPositivoxml.appendChild(doc.createTextNode(''+str(sPositivo)+'%'))
+
+        sNegativoxml = doc.createElement('sentimiento_negativo')
+        respuesta.appendChild(sNegativoxml)
+        sNegativoxml.appendChild(doc.createTextNode(''+str(sNegativo)+'%'))
+
+        for s in lstSentimientos:
+            sAnalizado = doc.createElement('sentimiento_analizado')
+            respuesta.appendChild(sAnalizado)
+            sAnalizado.appendChild(doc.createTextNode(''+s+''))
+
+        xml_str = doc.toprettyxml(indent ="\t") 
+        
+        save_path_file = "analisisMensaje.xml"
+        
+        with open(save_path_file, "w", encoding='utf-8') as f:
+            f.write(xml_str)
+        
+        return xml_str
+
+        
+
+
+
+
+
+
+
 
 
 

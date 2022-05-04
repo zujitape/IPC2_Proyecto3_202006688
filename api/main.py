@@ -2,10 +2,23 @@ from flask import Flask, request
 from flask.json import jsonify
 from manage import Manager
 from xml.dom import minidom
+from flask import Response
 
 manage = Manager()
 
 app = Flask(__name__)
+
+def normalize(s):
+        replacements = (
+            ("á", "a"),
+            ("é", "e"),
+            ("í", "i"),
+            ("ó", "o"),
+            ("ú", "u"),
+        )
+        for a, b in replacements:
+            s = s.replace(a, b).replace(a.upper(), b.upper())
+        return s
 
 #ENDPOINTS-consumo de la aplicación
 @app.route('/')
@@ -13,7 +26,7 @@ def index():
     return "API python w/Flask"
 
 @app.route('/ConsultarDatos', methods=['POST'])
-def add_solicitud():
+def add_solicitud():  
     xml = request.data.decode('utf-8')
     archivo = minidom.parseString(xml)
     #DICCIONARIO DE INFORMACIÓN GENERAL DEL XML
@@ -25,7 +38,7 @@ def add_solicitud():
             for palabra in palabras:
                 p = palabra.firstChild.data
                 nueva = p.strip(" ")
-                nueva.lower()
+                nueva = nueva.upper()
                 manage.agregarSPositivos(nueva)
 
         snegativos = sub.getElementsByTagName('sentimientos_negativos')
@@ -34,7 +47,7 @@ def add_solicitud():
             for palabra in palabras:
                 p = palabra.firstChild.data
                 nueva = p.strip(" ")
-                nueva.lower()
+                nueva = nueva.upper()
                 manage.agregarSNegativos(nueva)
 
 
@@ -46,7 +59,7 @@ def add_solicitud():
                 for n in nombre:
                     nombre = n.firstChild.data
                     nuevo = nombre.strip(" ")
-                    nuevo.lower()
+                    nuevo = nuevo.upper()
                     nuevaEmpresa = manage.agregarEmpresa(nuevo)
                     servicios = e.getElementsByTagName('servicio')
                     for s in servicios:
@@ -69,24 +82,35 @@ def add_solicitud():
             tipo = manage.getTSentimiento(mensaje)
             fecha = manage.getFecha(mensaje)
             fecha = fecha[0]
-            empresa = manage.getEmpresa(mensaje, tipo)
-            nEmpresa = empresa.nombre
-
-            servicio = manage.getServicio(mensaje, nEmpresa, tipo)
+            empresa = manage.getEmpresa(mensaje)
             if empresa != None:
-                manage.agregarMensaje(nEmpresa, servicio, tipo, fecha)
+                servicio = manage.getServicio(mensaje, empresa)
+                if servicio != None:
+                    nServicio = servicio.tipo
+                    manage.agregarMensaje(empresa, nServicio, tipo, fecha)
+                else:
+                    manage.agregarMensaje('', '', 'neutro', fecha)
             else:
                 manage.agregarMensaje('', '', 'neutro', fecha)
     
     lstFechas = manage.getFechas()
-
-    manage.writeXML(lstFechas)
-        
-    return jsonify({'msg':'Archivo XML cargado correctamente :D'}), 200
+    manage.fechas = lstFechas
+    return manage.writeXML(lstFechas)
 
 @app.route('/show', methods=['GET'])
-def getSentimientos():
-    manage.getSPositivos()
+def show():
+    xml = manage.writeXML(manage.fechas)
+    return Response(xml, mimetype='text/xml')
+
+@app.route('/ProcesarMensaje', methods=['POST'])
+def procesar():
+    xml = request.data.decode('utf-8')
+    archivo = minidom.parseString(xml)
+    mensaje = archivo.getElementsByTagName('mensaje')
+    for m in mensaje:
+        mensaje = m.firstChild.data
+    return manage.analizarMensaje(mensaje)
+
 
 
 if __name__=='__main__':
