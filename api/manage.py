@@ -4,6 +4,7 @@ from empresa import Empresa
 from mensaje import Mensaje
 import re
 from xml.dom import minidom
+from datetime import datetime
 
 def normalize(s):
         replacements = (
@@ -124,23 +125,10 @@ class Manager():
         respuesta = doc.createElement('respuesta')
         lstRespuestas.appendChild(respuesta)
         
-        noMensajes = 0
-        noMPositivos = 0
-        noMNegativos = 0
-        noMNeutros = 0
-
-        noMensajes2 = 0
-        noMPositivos2 = 0
-        noMNegativos2 = 0
-        noMNeutros2 = 0
-
-        noMensajes3 = 0
-        noMPositivos3 = 0
-        noMNegativos3 = 0
-        noMNeutros3 = 0
+        noMensajes, noMPositivos, noMNegativos, noMNeutros = 0, 0, 0, 0
+        noMensajes2, noMPositivos2, noMNegativos2, noMNeutros2 = 0, 0, 0, 0
+        noMensajes3, noMPositivos3, noMNegativos3, noMNeutros3 = 0, 0, 0, 0
     
-
-
         for fecha in lstFechas:
             for msj in self.mensajes:
                 if msj.fecha == fecha:
@@ -218,10 +206,7 @@ class Manager():
                     servicios = doc.createElement('servicios')
                     empresa.appendChild(servicios)
 
-                    noMensajes2 = 0
-                    noMPositivos2 = 0
-                    noMNegativos2 = 0
-                    noMNeutros2 = 0 
+                    noMensajes2, noMPositivos2, noMNegativos2, noMNeutros2 = 0, 0, 0, 0
 
                 for servicio in e.servicios:
                     for msj in self.mensajes: 
@@ -261,15 +246,9 @@ class Manager():
                         mensajes.appendChild(neutros)
                         neutros.appendChild(doc.createTextNode(''+str(noMNeutros3)+''))
 
-                        noMensajes3 = 0
-                        noMPositivos3 = 0
-                        noMNegativos3 = 0
-                        noMNeutros3 = 0 
+                        noMensajes3, noMPositivos3, noMNegativos3, noMNeutros3 = 0, 0, 0, 0
 
-            noMensajes = 0
-            noMPositivos = 0
-            noMNegativos = 0
-            noMNeutros = 0
+            noMensajes, noMPositivos, noMNegativos, noMNeutros = 0, 0, 0, 0
                     
         xml_str = doc.toprettyxml(indent ="\t") 
         
@@ -318,6 +297,7 @@ class Manager():
             for l in lstEmpresas:
                 tServicio = self.getServicio(nm, l)
                 lstServicios.append(tServicio.tipo)
+                print(tServicio.tipo)
 
 
         #Definir sentimiento/número de palabras
@@ -328,7 +308,7 @@ class Manager():
         for positivo in self.positivos:
             pPositiva = (positivo.palabra)
             if(pPositiva in nm):
-                print("POSITIVA!")
+                noPositivos += 1
                 noTotal += 1
 
         for negativo in self.negativos:
@@ -373,15 +353,13 @@ class Manager():
         for e in lstEmpresas:
             empresa = doc.createElement('empresa')
             empresas.appendChild(empresa)
-            empresa.appendChild(doc.createTextNode(''+e+''))
-
+            empresa.setAttribute('nombre', ''+e+'')
         
         for s in lstServicios:
             servicio = doc.createElement('servicio')
             empresa.appendChild(servicio)
             servicio.appendChild(doc.createTextNode(''+s+''))  
         
-
         positivas = doc.createElement('palabras_positivas')
         respuesta.appendChild(positivas)
         positivas.appendChild(doc.createTextNode(''+ str(noPositivos) +''))
@@ -412,6 +390,117 @@ class Manager():
         
         return xml_str
 
+    def archivoConsultaFecha(self, fecha, empresas):
+        noTotal, noPositivos, noNegativos, noNeutros =0, 0, 0, 0
+        total, positivos, negativos, neutros = 0, 0, 0, 0
+
+        json = []
+
+        for e in empresas:
+            for m in self.mensajes:
+                if m.nombreEmpresa == e and m.fecha == fecha:
+                    noTotal +=1
+                    total += 1
+                    if m.tMensaje == 'positivo':
+                        noPositivos += 1
+                        positivos += 1
+                    elif m.tMensaje == 'negativo':
+                        noNegativos += 1
+                        negativos += 1
+                    elif m.tMensaje == 'neutro':
+                        noNeutros += 1
+                        neutros += 1
+        
+            if noTotal >0:
+                datos = {
+                        'empresa': e,
+                        'total': noTotal,
+                        'positivos': noPositivos,
+                        'negativos': noNegativos,
+                        'neutros': noNeutros
+                    }
+                json.append(datos)
+            else: 
+                pass
+
+            noTotal = 0
+            noPositivos = 0
+            noNegativos = 0
+            noNeutros = 0
+
+        datosG = {
+            'totalG': total,
+            'positivosG': positivos,
+            'negativosG': negativos,
+            'neutrosG': neutros
+        }
+        json.append(datosG)
+
+        return json
+
+    def archivoConsultaRangoFechas(self, fechaI, fechaF, empresas):
+        inicio = datetime.strptime(fechaI, '%d/%m/%Y')
+        final = datetime.strptime(fechaF, '%d/%m/%Y')
+        inicio = inicio.date()
+        final = final.date()
+        noTotal, noPositivos, noNegativos, noNeutros =0, 0, 0, 0
+        total, positivos, negativos, neutros = 0, 0, 0, 0
+
+        json = []
+
+        for e in empresas:
+            for m in self.mensajes:
+                fecha = datetime.strptime(m.fecha, '%d/%m/%Y')
+                fecha = fecha.date()
+                if fecha >= inicio and fecha <= final and m.nombreEmpresa == e:
+                    noTotal +=1
+                    total += 1
+                    if m.tMensaje == 'positivo':
+                        noPositivos += 1
+                        positivos += 1
+                    elif m.tMensaje == 'negativo':
+                        noNegativos += 1
+                        negativos += 1
+                    elif m.tMensaje == 'neutro':
+                        noNeutros += 1
+                        neutros += 1
+        
+            if noTotal >0:
+                datos = {
+                        'fecha': fecha,
+                        'empresa': e,
+                        'total': noTotal,
+                        'positivos': noPositivos,
+                        'negativos': noNegativos,
+                        'neutros': noNeutros
+                    }
+                json.append(datos)
+            else: 
+                pass
+
+            noTotal = 0
+            noPositivos = 0
+            noNegativos = 0
+            noNeutros = 0
+
+        datosG = {
+            'totalG': total,
+            'positivosG': positivos,
+            'negativosG': negativos,
+            'neutrosG': neutros
+        }
+        json.append(datosG)
+
+        return json
+    
+
+
+
+                
+
+
+
+    
         
 
 

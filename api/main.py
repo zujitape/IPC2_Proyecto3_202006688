@@ -112,6 +112,17 @@ def procesar():
     return manage.analizarMensaje(mensaje)
 
 
+@app.route('/ConsultaFecha', methods=['GET'])
+def graficaFecha():
+    json = request.get_json()
+    m = manage.archivoConsultaFecha(json['fecha'], json['empresas'])
+    return jsonify(m), 200
+
+@app.route('/ConsultaRangoFechas', methods = ['GET'])
+def graficaRangoFechas():
+    json = request.get_json()
+    m = manage.archivoConsultaRangoFechas(json['fechaI'], json['fechaF'], json['empresas'])
+    return jsonify(m), 200
 
 if __name__=='__main__':
     app.run(debug=True)
