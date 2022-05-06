@@ -1,7 +1,7 @@
-from positivos import Positivos
-from negativos import Negativos
-from empresa import Empresa
-from mensaje import Mensaje
+from Objetos.positivos import Positivos
+from Objetos.negativos import Negativos
+from Objetos.empresa import Empresa
+from Objetos.mensaje import Mensaje
 import re
 from xml.dom import minidom
 from datetime import datetime
@@ -51,15 +51,24 @@ class Manager():
         noPositivos = 0
         noNegativos = 0
         msj = normalize(msj)
-        msj = msj.upper()
+        msj = msj.split(" ")
         for positivo in self.positivos:
-            pPositiva = normalize(positivo.palabra)
-            if(pPositiva in msj):
-                noPositivos +=1
+            for m in msj:
+                pPositiva = normalize(positivo.palabra)
+                res = re.match(pPositiva, m, flags = re.IGNORECASE)
+                if res != None:
+                    noPositivos += 1
+                else:
+                    pass
+
         for negativo in self.negativos:
-            pNegativa = normalize(negativo.palabra)
-            if(pNegativa in msj):
-                noNegativos +=1
+            for m in msj:
+                pNegativo = normalize(negativo.palabra)
+                resN = re.match(pNegativo, m, flags = re.IGNORECASE)
+                if resN != None:
+                    noNegativos += 1
+                else:
+                    pass
         if (noPositivos > noNegativos):
             tipo = 'positivo'
         elif (noNegativos > noPositivos):
@@ -297,7 +306,6 @@ class Manager():
             for l in lstEmpresas:
                 tServicio = self.getServicio(nm, l)
                 lstServicios.append(tServicio.tipo)
-                print(tServicio.tipo)
 
 
         #Definir sentimiento/número de palabras
@@ -307,15 +315,24 @@ class Manager():
         lstSentimientos = []
         for positivo in self.positivos:
             pPositiva = (positivo.palabra)
-            if(pPositiva in nm):
-                noPositivos += 1
-                noTotal += 1
+            for m in msj:
+                pPositiva = normalize(positivo.palabra)
+                res = re.match(pPositiva, m, flags = re.IGNORECASE)
+                if res != None:
+                    noPositivos += 1
+                    noTotal += 1
+                else:
+                    pass
 
         for negativo in self.negativos:
-            pNegativa = (negativo.palabra)
-            if(pNegativa in nm):
-                noNegativos +=1
-                noTotal += 1
+            for m in msj:
+                pNegativa = normalize(negativo.palabra)
+                res = re.match(pNegativa, m, flags = re.IGNORECASE)
+                if res != None:
+                    noNegativos += 1
+                    noTotal += 1
+                else:
+                    pass
         
         if noTotal>0:
             sPositivo = int((noPositivos/noTotal)*100)
@@ -451,8 +468,8 @@ class Manager():
         for e in empresas:
             for m in self.mensajes:
                 fecha = datetime.strptime(m.fecha, '%d/%m/%Y')
-                fecha = fecha.date()
-                if fecha >= inicio and fecha <= final and m.nombreEmpresa == e:
+                fechaN = fecha.date()
+                if fechaN >= inicio and fechaN <= final and m.nombreEmpresa == e:
                     noTotal +=1
                     total += 1
                     if m.tMensaje == 'positivo':
@@ -477,7 +494,7 @@ class Manager():
                 json.append(datos)
             else: 
                 pass
-
+ 
             noTotal = 0
             noPositivos = 0
             noNegativos = 0

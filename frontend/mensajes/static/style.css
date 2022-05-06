@@ -1,0 +1,92 @@
+*{margin: 0px; padding: 0px;}
+
+html,body { 
+background:rgb(221, 231, 164);
+}
+
+@font-face{
+	font-family: fuck;
+	src: url(Secular.ttf);
+    	
+}
+
+.h1{
+	font-family: fuck;
+	font-size: 40px;
+}
+
+.shadow{
+    text-shadow: 1px 1px 0 #333, 1px -1px 0 #333, -1px 1px 0 #333, -1px -1px 0 #333;
+}
+
+.header {
+    background-color: rgb(221, 231, 164);
+    background-size: cover;
+    font-family: fuck;
+    left: 1%;
+    
+  }
+
+.header .navbar {
+    background-color: rgba(0, 0, 0, 0.274) !important;
+    padding: 25px;
+    font-family: fuck;
+    font-size: 1.3rem;
+    border-spacing: 10rem;
+    text-decoration: underline wavy WHITE;
+    color: black;
+  }
+
+.dropdown-item{
+    background-color: rgb(221, 231, 164)  !important;
+}
+
+.btn {
+    width: 180px;
+    height: 60px;
+    cursor: pointer;
+    background: transparent;
+    border: 3px solid white;
+    outline: none;
+    transition: 1s ease-in-out;
+    font-family: fuck;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    margin-left: 150px !important;
+    margin-right: 150px !important;
+  }
+  
+  svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    fill: none;
+    stroke: #fff;
+    stroke-dasharray: 150 480;
+    stroke-dashoffset: 150;
+    transition: 1s ease-in-out;
+    color: white;
+    
+  }
+  
+  .btn:hover {
+    transition: 0.2s ease-in-out;
+    background: rgba(0, 0, 0, 0.274);
+    color: rgba(0, 0, 0, 0.63);
+  }
+  
+  .btn:hover svg {
+    stroke-dashoffset: -480;
+  }
+  
+  .btn span {
+    color: white;
+    font-size: 18px;
+    font-weight: 100;
+  }
+
+  .txtA{
+    border: 3px solid rgba(0, 0, 0, 0.534);
+    border-radius: 10px;
+  }
+

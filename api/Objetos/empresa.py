@@ -1,4 +1,4 @@
-from servicio import Servicio
+from Objetos.servicio import Servicio
 
 class Empresa():
     def __init__(self, nombre):

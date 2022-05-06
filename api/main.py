@@ -95,7 +95,9 @@ def add_solicitud():
     
     lstFechas = manage.getFechas()
     manage.fechas = lstFechas
-    return manage.writeXML(lstFechas)
+    cosito = manage.writeXML(lstFechas)
+    print(cosito)
+    return jsonify(cosito)
 
 @app.route('/show', methods=['GET'])
 def show():
@@ -111,7 +113,6 @@ def procesar():
         mensaje = m.firstChild.data
     return manage.analizarMensaje(mensaje)
 
-
 @app.route('/ConsultaFecha', methods=['GET'])
 def graficaFecha():
     json = request.get_json()
@@ -125,6 +126,6 @@ def graficaRangoFechas():
     return jsonify(m), 200
 
 if __name__=='__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
 
 

@@ -1,4 +1,4 @@
-from aliasServicio import AliasServicio
+from Objetos.aliasServicio import AliasServicio
 
 class Servicio():
     def __init__(self, tipo):

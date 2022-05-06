@@ -45,7 +45,7 @@
         <nombre> UVG </nombre>
         <servicio nombre="inscripción">  
 		  <alias> inscribí </alias>
-		  <alias> inscrito </alias>
+		  <alias> inscrito </alias >
 		</servicio>
 		<servicio nombre="asignación">
 		  <alias> asignado </alias>
